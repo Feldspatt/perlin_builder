@@ -5,17 +5,22 @@ use nannou::image::{DynamicImage};
 use nannou::wgpu::WithDeviceQueuePair;
 use noise_map::NoiseBuilder;
 
-
+const DIMENSIONS: u32 = 1024;
+const SCALE: f64 = 8.0;
+const OCTAVES: u8 = 12;
 
 fn main() {
     nannou::app(model)
         .event(event)
-        .simple_window(view)
         .run();
 }
 
 struct Model {
-    texture: wgpu::Texture,
+    texture: Option<wgpu::Texture>,
+    seed: u32,
+    scale: f64,
+    octaves: u8,
+    dimensions: u32,
 }
 
 fn event(_app: &App, model: &mut Model, _event: Event) {
@@ -25,11 +30,12 @@ fn event(_app: &App, model: &mut Model, _event: Event) {
         Event::WindowEvent { simple: Some(KeyPressed(key)), .. } => {
             match key {
                 Key::N => {
-                    model.texture = new_texture(_app);
+                    let texture = new_texture(_app, model);
+                    model.texture = Some(texture);
                 }
                 Key::S => {
-                    let random_prefix = random::<u32>();
-                    _app.main_window().capture_frame(format!("screenshot_{}.png", random_prefix));
+                    let random_prefix = random::<u8>();
+                    _app.main_window().capture_frame(format!("perlin_s{}_{}_{}.png", model.scale, model.octaves, random_prefix));
                 },
                 _ => (),
             }
@@ -39,8 +45,11 @@ fn event(_app: &App, model: &mut Model, _event: Event) {
 }
 
 
-fn new_texture(app: &App)-> wgpu::Texture {
-    let img_buf = NoiseBuilder::generate_rgb_image(1024, 4.0, 5, None);
+fn new_texture(app: &App, model: &mut Model) -> wgpu::Texture {
+    let random_seed = random::<u32>();
+    model.seed = random_seed;
+
+    let img_buf = NoiseBuilder::generate_rgb_image(model.dimensions, model.scale, model.octaves, model.seed);
 
     let gray_image = DynamicImage::ImageRgb8(img_buf);
 
@@ -57,9 +66,24 @@ fn new_texture(app: &App)-> wgpu::Texture {
 }
 
 fn model(app: &App) -> Model {
-    let texture = new_texture(app);
+    let _window = app.new_window()
+        .view(view)
+        .size_pixels(DIMENSIONS, DIMENSIONS)
+        .build()
+        .unwrap();
 
-    Model { texture }
+    let mut model = Model {
+        texture: None, //new_texture(app, model),
+        seed: random::<u32>(),
+        scale: SCALE,
+        octaves: OCTAVES,
+        dimensions: DIMENSIONS,
+    };
+
+    let texture = new_texture(app, &mut model);
+
+    model.texture = Some(texture);
+    model
 }
 
 fn view(app: &App, model: &Model, frame: Frame) {
@@ -69,7 +93,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
     // Clear the background to purple.
     draw.background().color(PLUM);
 
-    draw.texture(&model.texture);
+    draw.texture(&model.texture.as_ref().unwrap());
 
 
     draw.to_frame(app, &frame).unwrap();
