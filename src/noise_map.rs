@@ -1,55 +1,62 @@
 use nannou::image;
-use nannou::prelude::map_range;
-use nannou::image::{GrayImage, ImageBuffer, Luma, Pixel, RgbImage};
-use noise::{NoiseFn, Perlin, PerlinSurflet, Seedable};
+use nannou::prelude::{map_range, pow};
+use nannou::image::{RgbImage};
+use noise::{NoiseFn, Perlin};
 use nannou::rand::random;
-
-use rand::prelude::*;
-
-use pennereq::circ::ease_in_out;
 
 pub(crate) struct NoiseBuilder {
 
 }
 
 impl NoiseBuilder {
-    pub (crate) fn generate_gray_image(resolution: u32, scale: u8, octaves: u8, seed: Option<u32>) -> ImageBuffer<Luma<u8>, Vec<u8>> {
+    pub (crate) fn generate_rgb_image(dimension: u32, scale: f64, octaves: u8, seed: Option<u32>) -> RgbImage {
         let seed = seed.unwrap_or_else(|| random::<u32>());
 
-        let image = GrayImage::from_fn(resolution, resolution, |x, y| {
-            let mut perlin = Perlin::new(seed);
 
-
-            let mut  n = perlin.get([x as f64 / resolution as f64, y as f64 / resolution as f64]) as f32;
-
-            if n < -1.0 || n > 1.0 {
-                println!("n: {}", n)
+        fn get_octave_magnitude(octave: u8) -> f32 {
+            let mut octave_magnitude = 1.0;
+            for i in 0..octave {
+                octave_magnitude = 2.0*octave_magnitude;
             }
 
-            n = map_range(n, -1.0, 1.0, 0.0, 1.0);
+            octave_magnitude
+        }
+
+        let mut max_range = 0.0;
+        for octave in 0..octaves {
+            println!("octave: {}", octave);
+            println!("octave_magnitude: {}", get_octave_magnitude(octave));
+            max_range += 1.0/get_octave_magnitude(octave);
+        }
+
+        println!("max_range: {}", max_range);
+
+        let dim: f64 = dimension as f64;
+        let detail = scale/dim;
+
+        let mut n = 0.0;
+        let mut magnitude = 0.0;
+
+        let image = RgbImage::from_fn(dimension, dimension, |x, y| {
+
+            n = 0.0;
+
+            for octave in 0..octaves {
+
+                magnitude = get_octave_magnitude(octave);
+
+                let sca = detail * magnitude as f64;
+
+                let perlin = Perlin::new(seed + octave as u32);
+                let increment = perlin.get([x as f64 * sca, y as f64 * sca]) as f32;
+                n += increment/magnitude as f32;
+            }
+
+
+            n = map_range(n, -max_range, max_range, 0.0, 1.0);
 
             let n = (n * 255.0) as u8;
 
-
-            Luma([n])
-        });
-
-        image
-    }
-
-    pub (crate) fn generate_rgb_image(resolution: u32, scale: f64, octaves: u8, seed: Option<u32>) -> RgbImage {
-        let seed = seed.unwrap_or_else(|| random::<u32>());
-
-        let image = RgbImage::from_fn(resolution, resolution, |x, y| {
-            let perlin = Perlin::new(seed);
-
-            let mut n = perlin.get([x as f64 / scale / resolution as f64, y as f64 / scale / resolution as f64]) as f32;
-
-
-            n = map_range(n, -1.0, 1.0, 0.0, 1.0);
-
-
-            n = (n * 255.0);
 
             return image::Rgb([n as u8, n as u8, n as u8]);
         });

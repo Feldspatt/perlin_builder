@@ -1,7 +1,7 @@
 pub mod noise_map;
 
 use nannou::prelude::*;
-use nannou::image::{DynamicImage, GrayImage};
+use nannou::image::{DynamicImage};
 use nannou::wgpu::WithDeviceQueuePair;
 use noise_map::NoiseBuilder;
 
@@ -40,7 +40,7 @@ fn event(_app: &App, model: &mut Model, _event: Event) {
 
 
 fn new_texture(app: &App)-> wgpu::Texture {
-    let img_buf = NoiseBuilder::generate_rgb_image(256, 1.0/5.0, 8, None);
+    let img_buf = NoiseBuilder::generate_rgb_image(1024, 4.0, 5, None);
 
     let gray_image = DynamicImage::ImageRgb8(img_buf);
 
