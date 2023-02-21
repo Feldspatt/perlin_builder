@@ -56,8 +56,17 @@ impl NoiseBuilder {
 
             n = map_range(n, -max_range, max_range, 0.0, 1.0);
 
-            let n = (n * 255.0) as u8;
-            return image::Rgb([n, n, n]);
+
+            return if n < 0.4 {
+                let n = (n * 255.0) as u8;
+                image::Rgb([n, n, 255])
+            } else if n > 0.7 {
+                let n = (n * 255.0) as u8;
+                image::Rgb([n, n, n])
+            } else {
+                let n = ((n+1.0) * 75.0) as u8;
+                image::Rgb([n, 255, n])
+            }
         });
 
         image

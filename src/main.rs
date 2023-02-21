@@ -6,7 +6,7 @@ use nannou::wgpu::WithDeviceQueuePair;
 use noise_map::NoiseBuilder;
 
 const DIMENSIONS: u32 = 1024;
-const SCALE: f64 = 8.0;
+const SCALE: f64 = 4.0;
 const OCTAVES: u8 = 12;
 
 fn main() {
@@ -35,7 +35,7 @@ fn event(_app: &App, model: &mut Model, _event: Event) {
                 }
                 Key::S => {
                     let random_prefix = random::<u8>();
-                    _app.main_window().capture_frame(format!("perlin_s{}_{}_{}.png", model.scale, model.octaves, random_prefix));
+                    _app.main_window().capture_frame(format!("perlin_s{}_{}_{}.jpeg", model.scale, model.octaves, random_prefix));
                 },
                 _ => (),
             }
