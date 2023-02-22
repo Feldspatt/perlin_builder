@@ -3,6 +3,15 @@ use nannou::prelude::{map_range};
 use nannou::image::{RgbImage};
 use noise::{NoiseFn, Perlin};
 
+
+enum Layer {
+    Water,
+    Grove,
+    Grass,
+    Rock,
+    Snow,
+}
+
 pub(crate) struct NoiseBuilder {
 
 }
@@ -54,22 +63,76 @@ impl NoiseBuilder {
             }
 
 
-            n = map_range(n, -max_range, max_range, 0.0, 1.0);
+            n = map_range(n, -max_range, max_range, -100.0, 100.0);
 
+            let layer = Layer::get_layer(&n);
+            layer.get_color(&n)
 
-            return if n < 0.4 {
-                let n = (n * 255.0) as u8;
-                image::Rgb([n, n, 255])
-            } else if n > 0.7 {
-                let n = (n * 255.0) as u8;
-                image::Rgb([n, n, n])
-            } else {
-                let n = ((n+1.0) * 75.0) as u8;
-                image::Rgb([n, 255, n])
-            }
         });
 
         image
+    }
+}
+
+
+impl Layer {
+    fn get_height(&self) -> f32 {
+        match self {
+            Layer::Water => -30.0,
+            Layer::Grove => -10.0,
+            Layer::Grass => 30.0,
+            Layer::Rock => 60.0,
+            Layer::Snow => 100.0,
+        }
+    }
+
+    fn get_layer(&height: &f32) -> Layer {
+        if height < Layer::Water.get_height() {
+            Layer::Water
+        } else if height < Layer::Grove.get_height() {
+            Layer::Grove
+        } else if height < Layer::Grass.get_height() {
+            Layer::Grass
+        } else if height < Layer::Rock.get_height() {
+            Layer::Rock
+        } else {
+            Layer::Snow
+        }
+    }
+
+    fn get_previous_layer(&self) -> Option<Layer> {
+        match self {
+            Layer::Water => None,
+            Layer::Grove => Some(Layer::Water),
+            Layer::Grass => Some(Layer::Grove),
+            Layer::Rock => Some(Layer::Grass),
+            Layer::Snow => Some(Layer::Rock),
+        }
+    }
+
+    fn get_plage(&self) -> (f32, f32) {
+        let height = self.get_height();
+        let previous_height = match self.get_previous_layer() {
+            Some(layer) => layer.get_height(),
+            None => -100.
+        };
+
+        (previous_height, height)
+    }
+
+    fn get_color(&self, &height: &f32) -> image::Rgb<u8> {
+        let (min_height, max_height) = self.get_plage();
+        let norm_height = map_range(height as f32, min_height, max_height, 0.0, 255.0);
+
+        match self {
+            Layer::Water => {
+                image::Rgb([0, (255. - norm_height) as u8/3, norm_height as u8])
+            },
+            Layer::Grove => image::Rgb([20 + norm_height as u8/3, 128, norm_height as u8/3]),
+            Layer::Grass => image::Rgb([50 +(norm_height/3.) as u8 , 215 - norm_height as u8/5, 50 +(norm_height/4.) as u8]),
+            Layer::Rock => image::Rgb([ 75 + norm_height as u8/2, 75 + norm_height as u8/2, 100 + norm_height as u8/2]),
+            Layer::Snow => image::Rgb([255, 255, 255])
+        }
     }
 }
 
