@@ -1,6 +1,10 @@
 # Perlin Builder
 
-I wrote this to learn about Nannou and Rust.
+Generates 2d terrain and heightmap jpeg using Perlin noise.
+
+Probably a good place to look in for anyone starting with Nannou.
+
+I wrote this project to learn about Nannou and Rust. Constructive criticism is more than welcome.
 
 ## Controls
 
