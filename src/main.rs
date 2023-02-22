@@ -51,7 +51,6 @@ fn new_texture(app: &App, model: &mut Model) -> wgpu::Texture {
 
     let img_buf = NoiseBuilder::generate_rgb_image(model.dimensions, model.scale, model.octaves, model.seed);
 
-    let gray_image = DynamicImage::ImageRgb8(img_buf);
 
     let usage = wgpu::TextureUsages::COPY_SRC |
         wgpu::TextureUsages::COPY_DST |
@@ -59,7 +58,7 @@ fn new_texture(app: &App, model: &mut Model) -> wgpu::Texture {
         wgpu::TextureUsages::TEXTURE_BINDING;
 
     app.with_device_queue_pair(|device, queue| {
-        let texture = wgpu::Texture::load_from_image(device, queue, usage, &gray_image);
+        let texture = wgpu::Texture::load_from_image_buffer(device, queue, usage, &img_buf);
 
         texture
     })

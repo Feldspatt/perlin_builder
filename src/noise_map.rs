@@ -1,6 +1,7 @@
+use nannou::color::encoding::Srgb;
 use nannou::image;
 use nannou::prelude::{map_range};
-use nannou::image::{RgbImage};
+use nannou::image::{ImageBuffer, Rgb, Rgba, RgbImage};
 use noise::{NoiseFn, Perlin};
 
 
@@ -17,7 +18,7 @@ pub(crate) struct NoiseBuilder {
 }
 
 impl NoiseBuilder {
-    pub (crate) fn generate_rgb_image(dimension: u32, scale: f64, octaves: u8, seed: u32) -> RgbImage {
+    pub (crate) fn generate_rgb_image(dimension: u32, scale: f64, octaves: u8, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
 
         fn get_octave_magnitude(octave: u8) -> f32 {
             let mut octave_magnitude = 1.0;
@@ -47,7 +48,7 @@ impl NoiseBuilder {
         let mut n = 0.0;
         let mut magnitude = 0.0;
 
-        let image = RgbImage::from_fn(dimension, dimension, |x, y| {
+        let image = ImageBuffer::from_fn(dimension, dimension, |x, y| {
 
             n = 0.0;
 
@@ -120,18 +121,25 @@ impl Layer {
         (previous_height, height)
     }
 
-    fn get_color(&self, &height: &f32) -> image::Rgb<u8> {
+    fn get_color(&self, &height: &f32) -> Rgba<u8> {
         let (min_height, max_height) = self.get_plage();
         let norm_height = map_range(height as f32, min_height, max_height, 0.0, 255.0);
 
+        // match self {
+        //     Layer::Water => {
+        //         image::Rgb([0, (255. - norm_height) as u8/3, norm_height as u8])
+        //     },
+        //     Layer::Grove => image::Rgb([20 + norm_height as u8/3, 128, norm_height as u8/3]),
+        //     Layer::Grass => image::Rgb([50 +(norm_height/3.) as u8 , 215 - norm_height as u8/5, 50 +(norm_height/4.) as u8]),
+        //     Layer::Rock => image::Rgb([ 75 + norm_height as u8/2, 75 + norm_height as u8/2, 100 + norm_height as u8/2]),
+        //     Layer::Snow => image::Rgb([255, 255, 255])
+        // }
         match self {
-            Layer::Water => {
-                image::Rgb([0, (255. - norm_height) as u8/3, norm_height as u8])
-            },
-            Layer::Grove => image::Rgb([20 + norm_height as u8/3, 128, norm_height as u8/3]),
-            Layer::Grass => image::Rgb([50 +(norm_height/3.) as u8 , 215 - norm_height as u8/5, 50 +(norm_height/4.) as u8]),
-            Layer::Rock => image::Rgb([ 75 + norm_height as u8/2, 75 + norm_height as u8/2, 100 + norm_height as u8/2]),
-            Layer::Snow => image::Rgb([255, 255, 255])
+            Layer::Water => Rgba([0, (255. - norm_height) as u8 / 3, norm_height as u8,255]),
+            Layer::Grove => Rgba([20 + norm_height as u8 / 3, 128, norm_height as u8 / 3,255]),
+            Layer::Grass => Rgba([50 + (norm_height / 3.) as u8, 215 - norm_height as u8 / 5, 50 + (norm_height / 4.) as u8, 255]),
+            Layer::Rock => Rgba([75 + norm_height as u8 / 2, 75 + norm_height as u8 / 2, 100 + norm_height as u8 / 2,255]),
+            Layer::Snow => Rgba([255, 255, 255, 255])
         }
     }
 }
