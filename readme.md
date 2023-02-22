@@ -13,7 +13,7 @@ I wrote this to learn about Nannou and Rust.
 
 ## Some examples
 
-#### A basic view when the program starts:
+#### A typical view when the program starts:
 ![Example 6](/assets/perlin_s5.410421842378751_o16_163.jpeg)
 
 #### The same view with 4 octaves:
