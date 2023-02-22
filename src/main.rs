@@ -1,12 +1,11 @@
-pub mod noise_map;
+pub mod perlin_builder;
 
+use nannou::image::{ImageBuffer, Rgba};
 use nannou::prelude::*;
-use nannou::image::{DynamicImage};
 use nannou::wgpu::WithDeviceQueuePair;
-use noise_map::NoiseBuilder;
 
 const DIMENSIONS: u32 = 1024;
-const SCALE: f64 = 8.0;
+const SCALE: f64 = 4.0;
 const OCTAVES: u8 = 12;
 
 fn main() {
@@ -20,7 +19,10 @@ struct Model {
     seed: u32,
     scale: f64,
     octaves: u8,
-    dimensions: u32,
+    width: u32,
+    height: u32,
+    gen_funcs: Vec<fn(u32, u32, f64, u8, u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>>,
+    gen_func_index: usize,
 }
 
 fn event(_app: &App, model: &mut Model, _event: Event) {
@@ -29,13 +31,55 @@ fn event(_app: &App, model: &mut Model, _event: Event) {
         // If the window is closed, exit the program.
         Event::WindowEvent { simple: Some(KeyPressed(key)), .. } => {
             match key {
-                Key::N => {
-                    let texture = new_texture(_app, model);
-                    model.texture = Some(texture);
-                }
                 Key::S => {
                     let random_prefix = random::<u8>();
-                    _app.main_window().capture_frame(format!("perlin_s{}_{}_{}.png", model.scale, model.octaves, random_prefix));
+                    _app.main_window().capture_frame(format!("perlin_s{}_o{}_{}.jpeg", model.scale.ceil(), model.octaves, random_prefix));
+                },
+                Key::R => {
+                    model.seed = random::<u32>();
+                    update_texture(_app, model);
+                },
+                Key::M => {
+                    model.gen_func_index = (model.gen_func_index + 1) % model.gen_funcs.len();
+                    update_texture(_app, model);
+                },
+                //if two keys are pressed at the same time
+                Key::NumpadAdd => {
+                    let keys = &_app.keys.down;
+                    if keys.contains(&Key::O) {
+                        // I did not cap but above 12 the changes are unsignificant.
+                        model.octaves += 1;
+                        update_texture(_app, model);
+                    } else if keys.contains(&Key::Z) {
+                        model.scale += model.scale * 0.2;
+                        update_texture(_app, model);
+                    } else if keys.contains(&Key::W) {
+                        model.width += 100;
+                        update_texture(_app, model);
+                        _app.main_window().set_inner_size_pixels(model.width, model.height)
+                    } else if keys.contains(&Key::H) {
+                        model.height = model.height+100;
+                        update_texture(_app, model);
+                        _app.main_window().set_inner_size_pixels(model.width, model.height)
+                    }
+                },
+                Key::NumpadSubtract => {
+                    let keys = &_app.keys.down;
+                    if keys.contains(&Key::O)  && model.octaves > 1{
+                        model.octaves -= 1;
+                        update_texture(_app, model);
+                    } else if keys.contains(&Key::Z) {
+                        model.scale -= model.scale * 0.2;
+                        update_texture(_app, model);
+                    } else if keys.contains(&Key::W) && model.width > 100{
+                        model.width -= 100;
+                        update_texture(_app, model);
+                        _app.main_window().set_inner_size_pixels(model.width, model.height)
+                    } else if keys.contains(&Key::H) && model.height > 100{
+                        model.height -= 100;
+                        update_texture(_app, model);
+                        _app.main_window().set_inner_size_pixels(model.width, model.height)
+                    }
                 },
                 _ => (),
             }
@@ -44,14 +88,15 @@ fn event(_app: &App, model: &mut Model, _event: Event) {
     }
 }
 
+fn update_texture(app: &App, model: &mut Model) {
+    let texture = new_texture(app, model);
+    model.texture = Some(texture);
+}
 
 fn new_texture(app: &App, model: &mut Model) -> wgpu::Texture {
-    let random_seed = random::<u32>();
-    model.seed = random_seed;
 
-    let img_buf = NoiseBuilder::generate_rgb_image(model.dimensions, model.scale, model.octaves, model.seed);
+    let img_buf = (model.gen_funcs[model.gen_func_index])(model.width, model.height, model.scale, model.octaves, model.seed);
 
-    let gray_image = DynamicImage::ImageRgb8(img_buf);
 
     let usage = wgpu::TextureUsages::COPY_SRC |
         wgpu::TextureUsages::COPY_DST |
@@ -59,7 +104,7 @@ fn new_texture(app: &App, model: &mut Model) -> wgpu::Texture {
         wgpu::TextureUsages::TEXTURE_BINDING;
 
     app.with_device_queue_pair(|device, queue| {
-        let texture = wgpu::Texture::load_from_image(device, queue, usage, &gray_image);
+        let texture = wgpu::Texture::load_from_image_buffer(device, queue, usage, &img_buf);
 
         texture
     })
@@ -75,9 +120,12 @@ fn model(app: &App) -> Model {
     let mut model = Model {
         texture: None, //new_texture(app, model),
         seed: random::<u32>(),
-        scale: SCALE,
+        scale: SCALE.clone(),
         octaves: OCTAVES,
-        dimensions: DIMENSIONS,
+        width: DIMENSIONS,
+        height: DIMENSIONS,
+        gen_funcs: vec![perlin_builder::terrain_generation::generate_terrain_map, perlin_builder::heightmap_generation::generate_height_map],
+        gen_func_index: 0,
     };
 
     let texture = new_texture(app, &mut model);
