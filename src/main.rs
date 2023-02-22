@@ -97,7 +97,6 @@ fn new_texture(app: &App, model: &mut Model) -> wgpu::Texture {
 
     let img_buf = (model.gen_funcs[model.gen_func_index])(model.width, model.height, model.scale, model.octaves, model.seed);
 
-
     let usage = wgpu::TextureUsages::COPY_SRC |
         wgpu::TextureUsages::COPY_DST |
         wgpu::TextureUsages::RENDER_ATTACHMENT |
@@ -120,7 +119,7 @@ fn model(app: &App) -> Model {
     let mut model = Model {
         texture: None, //new_texture(app, model),
         seed: random::<u32>(),
-        scale: SCALE.clone(),
+        scale: SCALE,
         octaves: OCTAVES,
         width: DIMENSIONS,
         height: DIMENSIONS,
@@ -142,7 +141,6 @@ fn view(app: &App, model: &Model, frame: Frame) {
     draw.background().color(PLUM);
 
     draw.texture(&model.texture.as_ref().unwrap());
-
 
     draw.to_frame(app, &frame).unwrap();
 }
