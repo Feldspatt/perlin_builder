@@ -6,7 +6,7 @@ use nannou::wgpu::WithDeviceQueuePair;
 
 const DIMENSIONS: u32 = 1024;
 const SCALE: f64 = 4.0;
-const OCTAVES: u8 = 12;
+const OCTAVES: u8 = 7;
 
 fn main() {
     nannou::app(model)
