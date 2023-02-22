@@ -27,7 +27,7 @@ pub fn generate_texture(coloring_method: fn(f32) -> Rgba<u8>, width: u32, heigth
         max_range += 1.0/get_octave_magnitude(octave);
     }
 
-    let detail = 1. as f64/(scale*100.);
+    let detail = 1./(scale*100.);
 
     let mut n = 0.0;
     let mut magnitude = 0.0;
